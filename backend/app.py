@@ -117,6 +117,22 @@ def add_gear():
             f.save(UPLOAD_DIR / fname)
             photo_url = f"/uploads/{fname}"
 
+    if not photo_url:
+        external_url = payload.get("external_photo_url", "").strip()
+        if external_url:
+            try:
+                import urllib.request as ureq
+                ext = external_url.split("?")[0].rsplit(".", 1)[-1].lower()
+                if ext not in ALLOWED_IMAGE_EXT:
+                    ext = "jpg"
+                fname = f"gear_{uuid.uuid4().hex}.{ext}"
+                req = ureq.Request(external_url, headers={"User-Agent": "Mozilla/5.0"})
+                with ureq.urlopen(req, timeout=10) as resp:
+                    (UPLOAD_DIR / fname).write_bytes(resp.read())
+                photo_url = f"/uploads/{fname}"
+            except Exception:
+                pass
+
     item = {
         "id": uuid.uuid4().hex,
         "category": payload.get("category", "paddle"),
@@ -131,6 +147,23 @@ def add_gear():
     items.append(item)
     save("gear", items)
     return jsonify(item), 201
+
+
+@app.route("/api/gear/image-search")
+def gear_image_search():
+    q = request.args.get("q", "").strip()
+    if not q:
+        return jsonify({"images": []})
+    try:
+        from ddgs import DDGS
+        results = DDGS().images(q, max_results=5, safesearch="on")
+        images = [
+            {"url": r["image"], "thumb": r.get("thumbnail") or r["image"]}
+            for r in results if r.get("image")
+        ]
+        return jsonify({"images": images[:4]})
+    except Exception as e:
+        return jsonify({"images": [], "error": str(e)})
 
 
 @app.route("/api/gear/<item_id>", methods=["DELETE"])

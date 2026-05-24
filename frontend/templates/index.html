@@ -66,7 +66,11 @@
           <label>Started using <input name="started_using" type="month" /></label>
           <label class="full">Specs <input name="specs" placeholder="16mm, T700 carbon, 8.0oz, elongated…" /></label>
           <label class="full">Notes <textarea name="notes" rows="2" placeholder="Why you switched, what you love, what bugs you…"></textarea></label>
-          <label class="full">Photo <input name="photo" type="file" accept="image/*" /></label>
+          <label class="full">Photo
+            <input name="photo" type="file" accept="image/*" id="gear-photo-file" />
+            <input type="hidden" name="external_photo_url" id="gear-external-url" />
+          </label>
+          <div class="full" id="img-search-area"></div>
         </div>
         <button class="btn primary" type="submit">Add to bag</button>
       </form>

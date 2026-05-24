@@ -166,11 +166,78 @@ $("#gear-form").addEventListener("submit", async (e) => {
   if (r.ok) {
     toast("Added to bag");
     e.target.reset();
+    $("#img-search-area").innerHTML = "";
     loadGear();
   } else {
     toast("Failed to add", true);
   }
 });
+
+/* ---------- Gear image search ---------- */
+function updateImgSearchTrigger() {
+  const brand = $('[name="brand"]', $("#gear-form")).value.trim();
+  const name  = $('[name="name"]',  $("#gear-form")).value.trim();
+  const area  = $("#img-search-area");
+  if (brand && name) {
+    if (!area.querySelector(".img-find-btn")) {
+      area.innerHTML = `<button type="button" class="btn ghost small img-find-btn">◆ Find image →</button>`;
+      area.querySelector(".img-find-btn").addEventListener("click", () => searchGearImage(brand, name));
+    }
+  } else {
+    area.innerHTML = "";
+  }
+}
+
+async function searchGearImage(brand, name) {
+  const area = $("#img-search-area");
+  area.innerHTML = `<span class="img-searching">Searching…</span>`;
+  try {
+    const r = await api.get(`/api/gear/image-search?q=${encodeURIComponent(brand + " " + name)}`);
+    if (!r.images || !r.images.length) {
+      area.innerHTML = `<p class="img-no-results">No images found — upload your own above.</p>`;
+      return;
+    }
+    area.innerHTML = `
+      <div class="img-picker">
+        <p class="img-picker-label">Pick one or upload your own:</p>
+        <div class="img-thumbs">
+          ${r.images.map(img => `<img class="img-thumb" src="${img.thumb}" data-full="${img.url}" />`).join("")}
+        </div>
+        <div id="img-preview-row" style="display:none">
+          <img id="img-preview-img" src="" alt="selected" />
+          <button type="button" class="btn ghost small" id="img-clear-btn">✕ Clear</button>
+        </div>
+      </div>`;
+    $$(".img-thumb", area).forEach(thumb => {
+      thumb.addEventListener("error", () => thumb.style.display = "none");
+      thumb.addEventListener("click", () => pickGearImage(thumb));
+    });
+  } catch {
+    area.innerHTML = `<p class="img-no-results">Search failed — upload your own above.</p>`;
+  }
+}
+
+function pickGearImage(thumb) {
+  $$(".img-thumb").forEach(t => t.classList.remove("selected"));
+  thumb.classList.add("selected");
+  $("#gear-external-url").value = thumb.dataset.full;
+  $("#gear-photo-file").value = "";
+  const row = $("#img-preview-row");
+  row.style.display = "flex";
+  $("#img-preview-img").src = thumb.src;
+  $("#img-clear-btn").addEventListener("click", clearGearImage, { once: true });
+}
+
+function clearGearImage() {
+  $("#gear-external-url").value = "";
+  $$(".img-thumb").forEach(t => t.classList.remove("selected"));
+  const row = $("#img-preview-row");
+  if (row) row.style.display = "none";
+}
+
+$('[name="brand"]', $("#gear-form")).addEventListener("input", updateImgSearchTrigger);
+$('[name="name"]',  $("#gear-form")).addEventListener("input", updateImgSearchTrigger);
+$("#gear-photo-file").addEventListener("change", clearGearImage);
 
 /* ============================================
    FILM ROOM
