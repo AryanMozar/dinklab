@@ -123,7 +123,12 @@ async function loadGear() {
   const items = await api.get("/api/gear");
   const list = $("#gear-list");
   if (!items.length) {
-    list.innerHTML = `<div class="empty-state">// no gear logged yet</div>`;
+    list.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">◆</div>
+        <div class="empty-title">Nothing in the bag yet</div>
+        <div class="empty-sub">Add your first paddle, shoes, or accessory using the form above.</div>
+      </div>`;
     return;
   }
   list.innerHTML = items
@@ -246,7 +251,12 @@ async function loadFilms() {
   const films = await api.get("/api/films");
   const list = $("#film-list");
   if (!films.length) {
-    list.innerHTML = `<div class="empty-state">// no film uploaded yet</div>`;
+    list.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">▶</div>
+        <div class="empty-title">No film uploaded yet</div>
+        <div class="empty-sub">Upload a match or practice video, drop timestamped notes as you watch, then hit Generate AI Breakdown to find your patterns.</div>
+      </div>`;
     return;
   }
   list.innerHTML = films
@@ -372,7 +382,12 @@ async function loadCalendar() {
   const list = $("#post-list");
   const posts = (cal.posts || []).sort((a, b) => (a.date || "").localeCompare(b.date || ""));
   if (!posts.length) {
-    list.innerHTML = `<div class="empty-state">// no posts planned yet</div>`;
+    list.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">◻</div>
+        <div class="empty-title">No posts planned yet</div>
+        <div class="empty-sub">Lock in your target event above, then start mapping out your content drops. Aim for 70% tips, 30% highlights.</div>
+      </div>`;
   } else {
     list.innerHTML = posts.map(p => `
       <div class="post-card">
@@ -457,7 +472,12 @@ async function loadAnalytics() {
   const insightsEl = $("#insights");
 
   if (insights.empty) {
-    insightsEl.innerHTML = `<div class="empty-state">// log a post to see insights</div>`;
+    insightsEl.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">◈</div>
+        <div class="empty-title">No data yet</div>
+        <div class="empty-sub">Log your first post's numbers using the form above. Once you have a few entries, insights will show up here — top posts, engagement by platform, and whether you're actually hitting 70/30.</div>
+      </div>`;
   } else {
     const t = insights.totals;
     const renderBars = (obj, label) => {
