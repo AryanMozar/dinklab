@@ -25,7 +25,9 @@ Because the AI reads *your* observations, you get genuinely personal feedback wi
 Lock in a target event, get a live day-countdown, and plan posts across Instagram / TikTok / YouTube. Each post has a status (planned → filmed → edited → posted) and a type (tip or highlight) so you can keep the planned mix honest against the 70/30 target.
 
 ### 04 — Analytics
-Manually log each post's performance (views, likes, comments, saves, shares). The dashboard shows totals, top performers, engagement rates, by-platform breakdowns, and your **actual** tips-vs-highlights split next to the target.
+Log post performance (views, likes, comments, saves, shares) and let the dashboard surface totals, top performers, engagement rates, by-platform breakdowns, and your **actual** tips-vs-highlights split vs. the target.
+
+Connect YouTube and Instagram to pull data automatically — no manual entry needed. TikTok is manual-entry (their API is not open to individual creators).
 
 ---
 
@@ -69,6 +71,38 @@ python build.py
 - Build the `.app` on a Mac
 
 You only need to do this once when you want a real shippable app. For day-to-day development, just use `python launcher.py`.
+
+---
+
+## Social media integration setup
+
+YouTube and Instagram can auto-sync your post analytics into the Analytics tab. Setup takes ~5 minutes per platform and only needs to be done once.
+
+### YouTube (Google Cloud Console)
+
+1. Go to [console.cloud.google.com](https://console.cloud.google.com) and create a new project (e.g. "DinkLab").
+2. Enable the **YouTube Data API v3**: *APIs & Services → Library → search "YouTube Data API v3" → Enable*.
+3. Create OAuth credentials: *APIs & Services → Credentials → Create Credentials → OAuth client ID*.
+   - Application type: **Desktop app**
+   - Name: anything (e.g. "DinkLab desktop")
+4. Download the credentials JSON and note the **Client ID** and **Client Secret**.
+5. Under *OAuth consent screen*, add your Google account email as a test user (required while the app is in "Testing" mode).
+6. In DinkLab → Analytics, click **Connect YouTube**, enter your Client ID and Client Secret, then click **Start OAuth**. Your browser will open to Google's sign-in — authorize it and you'll be redirected back automatically.
+
+**Redirect URI** (pre-registered by default for desktop apps; no action needed):
+`http://localhost:5000/api/integrations/youtube/callback`
+
+### Instagram (Facebook Developer)
+
+1. Go to [developers.facebook.com](https://developers.facebook.com) and create an app: *My Apps → Create App → Other → Consumer*.
+2. Add the **Instagram Basic Display** product to your app.
+3. Under *Instagram Basic Display → Basic Display*:
+   - Add a **Valid OAuth Redirect URI**: `http://localhost:5000/api/integrations/instagram/callback`
+   - Add your Instagram account as a test user under *Roles → Test Users*
+4. Copy your **Instagram App ID** and **Instagram App Secret** from the *Basic Display* settings page.
+5. In DinkLab → Analytics, click **Connect Instagram**, enter the App ID and App Secret, then click **Start OAuth**.
+
+> **Note:** Instagram long-lived tokens last 60 days. DinkLab refreshes the token automatically every time you sync, so as long as you sync at least once every two months the connection stays live.
 
 ---
 
@@ -158,7 +192,8 @@ You're the eyes; the AI is the pattern-finder. It works because your notes are s
 
 ## Roadmap
 
-- [ ] Custom app icon (Windows `.ico` + macOS `.icns`)
+- [x] Custom app icon (Windows `.ico` + macOS `.icns`)
+- [x] YouTube + Instagram analytics auto-sync
 - [ ] Export gear list as a shareable image
 - [ ] Calendar export to `.ics` for Apple/Google Calendar
 - [ ] Tag-based filtering on film notes
