@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pickleball HQ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=JetBrains+Mono:wght@400;600&family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+  <div class="grain"></div>
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">◆</span>
+      <span class="brand-name">PICKLEBALL<span class="brand-accent">HQ</span></span>
+    </div>
+    <div class="ai-status" id="ai-status">
+      <span class="dot"></span>
+      <span class="ai-status-text">checking AI…</span>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="gear">
+      <span class="tab-num">01</span>
+      <span class="tab-label">Gear</span>
+    </button>
+    <button class="tab" data-tab="film">
+      <span class="tab-num">02</span>
+      <span class="tab-label">Film Room</span>
+    </button>
+    <button class="tab" data-tab="calendar">
+      <span class="tab-num">03</span>
+      <span class="tab-label">Calendar</span>
+    </button>
+    <button class="tab" data-tab="analytics">
+      <span class="tab-num">04</span>
+      <span class="tab-label">Analytics</span>
+    </button>
+  </nav>
+
+  <main>
+    <!-- GEAR -->
+    <section class="panel active" id="panel-gear">
+      <div class="panel-head">
+        <h1 class="display">The Bag</h1>
+        <p class="sub">Your loadout. Paddles, shoes, everything you actually run with.</p>
+      </div>
+
+      <form id="gear-form" class="card form-card" enctype="multipart/form-data">
+        <div class="form-grid">
+          <label>Category
+            <select name="category" required>
+              <option value="paddle">Paddle</option>
+              <option value="shoes">Shoes</option>
+              <option value="bag">Bag</option>
+              <option value="apparel">Apparel</option>
+              <option value="accessory">Accessory</option>
+            </select>
+          </label>
+          <label>Brand <input name="brand" placeholder="JOOLA, Selkirk…" /></label>
+          <label>Name <input name="name" required placeholder="Ben Johns Perseus" /></label>
+          <label>Started using <input name="started_using" type="month" /></label>
+          <label class="full">Specs <input name="specs" placeholder="16mm, T700 carbon, 8.0oz, elongated…" /></label>
+          <label class="full">Notes <textarea name="notes" rows="2" placeholder="Why you switched, what you love, what bugs you…"></textarea></label>
+          <label class="full">Photo <input name="photo" type="file" accept="image/*" /></label>
+        </div>
+        <button class="btn primary" type="submit">Add to bag</button>
+      </form>
+
+      <div class="grid-cards" id="gear-list"></div>
+    </section>
+
+    <!-- FILM ROOM -->
+    <section class="panel" id="panel-film">
+      <div class="panel-head">
+        <h1 class="display">Film Room</h1>
+        <p class="sub">Upload footage. Drop timestamped notes. Let local AI find your patterns.</p>
+      </div>
+
+      <form id="film-form" class="card form-card" enctype="multipart/form-data">
+        <div class="form-grid">
+          <label class="full">Title <input name="title" required placeholder="Saturday open play vs. Marcus" /></label>
+          <label class="full">Context <textarea name="context" rows="2" placeholder="Tournament round, partner, opponent style, conditions…"></textarea></label>
+          <label class="full">Video file <input name="video" type="file" accept="video/*" required /></label>
+        </div>
+        <button class="btn primary" type="submit">Upload film</button>
+      </form>
+
+      <div id="film-list"></div>
+    </section>
+
+    <!-- CALENDAR -->
+    <section class="panel" id="panel-calendar">
+      <div class="panel-head">
+        <h1 class="display">Content Calendar</h1>
+        <p class="sub">Lock in the countdown. Plan the drops. Keep the 70/30 honest.</p>
+      </div>
+
+      <div class="card countdown-card">
+        <div class="countdown-grid">
+          <div>
+            <label class="micro">Target event</label>
+            <input id="target-name" placeholder="College Nationals — Atlanta" />
+          </div>
+          <div>
+            <label class="micro">Target date</label>
+            <input id="target-date" type="date" />
+          </div>
+          <button class="btn ghost" id="save-target">Save</button>
+        </div>
+        <div class="countdown-display" id="countdown-display">
+          <div class="countdown-num">—</div>
+          <div class="countdown-label">days until kickoff</div>
+        </div>
+      </div>
+
+      <form id="post-form" class="card form-card">
+        <h2 class="section-title">Plan a post</h2>
+        <div class="form-grid">
+          <label>Date <input name="date" type="date" required /></label>
+          <label>Platform
+            <select name="platform">
+              <option value="instagram">Instagram</option>
+              <option value="tiktok">TikTok</option>
+              <option value="youtube">YouTube</option>
+            </select>
+          </label>
+          <label>Format
+            <select name="format">
+              <option value="short">Short / Reel</option>
+              <option value="long">Long form</option>
+              <option value="story">Story</option>
+              <option value="carousel">Carousel</option>
+            </select>
+          </label>
+          <label>Type
+            <select name="post_type">
+              <option value="tip">Tip / Educational</option>
+              <option value="highlight">Highlight / Gameplay</option>
+            </select>
+          </label>
+          <label class="full">Topic <input name="topic" required placeholder="Third shot drop footwork breakdown" /></label>
+          <label class="full">Notes <textarea name="notes" rows="2" placeholder="Hook idea, props needed, b-roll…"></textarea></label>
+        </div>
+        <button class="btn primary" type="submit">Add to plan</button>
+      </form>
+
+      <div class="split-meter" id="split-meter"></div>
+      <div id="post-list"></div>
+    </section>
+
+    <!-- ANALYTICS -->
+    <section class="panel" id="panel-analytics">
+      <div class="panel-head">
+        <h1 class="display">Analytics</h1>
+        <p class="sub">Log what you posted. Find out what's actually working.</p>
+      </div>
+
+      <form id="analytics-form" class="card form-card">
+        <div class="form-grid">
+          <label>Date posted <input name="date" type="date" required /></label>
+          <label>Platform
+            <select name="platform">
+              <option value="instagram">Instagram</option>
+              <option value="tiktok">TikTok</option>
+              <option value="youtube">YouTube</option>
+            </select>
+          </label>
+          <label>Format
+            <select name="format">
+              <option value="short">Short</option>
+              <option value="long">Long</option>
+              <option value="story">Story</option>
+              <option value="carousel">Carousel</option>
+            </select>
+          </label>
+          <label>Type
+            <select name="post_type">
+              <option value="tip">Tip</option>
+              <option value="highlight">Highlight</option>
+            </select>
+          </label>
+          <label class="full">Topic <input name="topic" required /></label>
+          <label>Views <input name="views" type="number" min="0" required /></label>
+          <label>Likes <input name="likes" type="number" min="0" /></label>
+          <label>Comments <input name="comments" type="number" min="0" /></label>
+          <label>Saves <input name="saves" type="number" min="0" /></label>
+          <label>Shares <input name="shares" type="number" min="0" /></label>
+          <label class="full">URL (optional) <input name="url" placeholder="https://…" /></label>
+        </div>
+        <button class="btn primary" type="submit">Log post</button>
+      </form>
+
+      <div id="insights"></div>
+      <div id="analytics-list"></div>
+    </section>
+  </main>
+
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
