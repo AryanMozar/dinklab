@@ -505,6 +505,32 @@ textarea { resize: vertical; font-family: 'Manrope', sans-serif; }
   margin-bottom: 0.75rem;
 }
 
+.ai-nudge {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--text-faint);
+  letter-spacing: 0.03em;
+}
+
+.ai-nudge a {
+  color: var(--text-dim);
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 3px;
+}
+
+.ai-nudge a:hover { color: var(--text); }
+
+.ai-nudge-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--red);
+  flex-shrink: 0;
+}
+
 /* ---------- Calendar ---------- */
 .countdown-card {
   text-align: center;

@@ -5,6 +5,8 @@
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 
+let aiOnline = false;
+
 const api = {
   async get(path) {
     const r = await fetch(path);
@@ -63,17 +65,54 @@ async function checkAIStatus() {
   try {
     const r = await api.get("/api/ai/status");
     if (r.connected) {
+      aiOnline = true;
       status.classList.add("online");
       status.classList.remove("offline");
       text.textContent = "AI online";
     } else {
+      aiOnline = false;
       status.classList.add("offline");
       status.classList.remove("online");
       text.textContent = "LM Studio offline";
     }
   } catch {
+    aiOnline = false;
     status.classList.add("offline");
     text.textContent = "AI offline";
+  }
+  refreshAIButtons();
+}
+
+function refreshAIButtons() {
+  $$("[data-ai-area]").forEach(area => {
+    const id = area.dataset.aiArea;
+    if (aiOnline) {
+      area.innerHTML = `<button class="btn primary" data-analyze="${id}">Generate AI breakdown</button>`;
+      area.querySelector("[data-analyze]").addEventListener("click", e => runAnalysis(e.currentTarget));
+    } else {
+      area.innerHTML = `<div class="ai-nudge"><span class="ai-nudge-dot"></span>AI breakdown requires LM Studio — <a href="https://lmstudio.ai" target="_blank">get it free →</a></div>`;
+    }
+  });
+}
+
+async function runAnalysis(btn) {
+  const id = btn.dataset.analyze;
+  btn.textContent = "Analyzing…";
+  btn.disabled = true;
+  try {
+    const r = await fetch(`/api/films/${id}/analyze`, { method: "POST" });
+    const data = await r.json();
+    if (!r.ok) {
+      toast(data.error || "Analysis failed", true);
+    } else {
+      toast("Breakdown ready");
+      loadFilms();
+    }
+  } catch {
+    toast("Request failed", true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Generate AI breakdown";
   }
 }
 
@@ -180,9 +219,7 @@ async function loadFilms() {
           </div>
         </div>
 
-        <div style="margin-top: 1.25rem">
-          <button class="btn primary" data-analyze="${f.id}">Generate AI breakdown</button>
-        </div>
+        <div class="ai-btn-area" data-ai-area="${f.id}" style="margin-top: 1.25rem"></div>
         ${f.ai_summary ? `
           <div class="ai-summary">
             <div class="ai-summary-head">◆ AI Breakdown — ${fmtDate(f.ai_summary.generated_at)}</div>
@@ -216,28 +253,7 @@ async function loadFilms() {
     })
   );
 
-  $$("[data-analyze]").forEach((b) =>
-    b.addEventListener("click", async () => {
-      const id = b.dataset.analyze;
-      b.textContent = "Analyzing…";
-      b.disabled = true;
-      try {
-        const r = await fetch(`/api/films/${id}/analyze`, { method: "POST" });
-        const data = await r.json();
-        if (!r.ok) {
-          toast(data.error || "Analysis failed", true);
-        } else {
-          toast("Breakdown ready");
-          loadFilms();
-        }
-      } catch (e) {
-        toast("Request failed", true);
-      } finally {
-        b.disabled = false;
-        b.textContent = "Generate AI breakdown";
-      }
-    })
-  );
+  refreshAIButtons();
 }
 
 $("#film-form").addEventListener("submit", async (e) => {
