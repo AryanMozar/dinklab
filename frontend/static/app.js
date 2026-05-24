@@ -1,5 +1,5 @@
 /* ============================================
-   Pickleball HQ — frontend logic
+   DinkLab — frontend logic
    ============================================ */
 
 const $ = (s, root = document) => root.querySelector(s);

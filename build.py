@@ -1,12 +1,12 @@
 """
-Build Pickleball HQ as a standalone desktop app for the CURRENT platform.
+Build DinkLab as a standalone desktop app for the CURRENT platform.
 
 Usage:
     python build.py
 
 Output:
-    Windows: dist/Pickleball HQ/Pickleball HQ.exe
-    macOS:   dist/Pickleball HQ.app
+    Windows: dist/DinkLab/DinkLab.exe
+    macOS:   dist/DinkLab.app
 """
 import shutil
 import subprocess
@@ -34,9 +34,9 @@ def ensure_pyinstaller():
 
 
 def build():
-    print("Building Pickleball HQ for", sys.platform)
+    print("Building DinkLab for", sys.platform)
     subprocess.check_call(
-        [sys.executable, "-m", "PyInstaller", "pickleball-hq.spec", "--noconfirm"],
+        [sys.executable, "-m", "PyInstaller", "dinklab.spec", "--noconfirm"],
         cwd=ROOT,
     )
 
@@ -44,15 +44,15 @@ def build():
     print("\n" + "=" * 50)
     print("Build complete.")
     if sys.platform == "darwin":
-        target = dist / "Pickleball HQ.app"
+        target = dist / "DinkLab.app"
         print(f"App: {target}")
         print("Drag it into /Applications to install.")
     elif sys.platform == "win32":
-        target = dist / "Pickleball HQ" / "Pickleball HQ.exe"
+        target = dist / "DinkLab" / "DinkLab.exe"
         print(f"Exe: {target}")
-        print("The whole 'Pickleball HQ' folder is portable — zip it or make a shortcut to the .exe.")
+        print("The whole 'DinkLab' folder is portable — zip it or make a shortcut to the .exe.")
     else:
-        target = dist / "Pickleball HQ"
+        target = dist / "DinkLab"
         print(f"Built to: {target}")
     print("=" * 50)
 

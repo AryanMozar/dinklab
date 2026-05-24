@@ -1,5 +1,5 @@
 """
-Pickleball HQ — Desktop launcher
+DinkLab — Desktop launcher
 Starts the Flask server in a background thread and opens a native window via pywebview.
 Cross-platform: works on Windows and macOS.
 """
@@ -60,7 +60,7 @@ def main():
 
     # Open the native window
     webview.create_window(
-        title="Pickleball HQ",
+        title="DinkLab",
         url=f"http://127.0.0.1:{port}",
         width=1280,
         height=860,

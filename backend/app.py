@@ -1,5 +1,5 @@
 """
-Pickleball HQ — Flask backend
+DinkLab — Flask backend
 A personal pickleball portfolio + film room + content planner.
 All data stored locally as JSON. AI analysis via LM Studio (OpenAI-compatible local API).
 """
@@ -30,11 +30,11 @@ def user_data_dir() -> Path:
         # Packaged: store under the user's home so data survives reinstalls
         home = Path.home()
         if sys.platform == "darwin":
-            base = home / "Library" / "Application Support" / "PickleballHQ"
+            base = home / "Library" / "Application Support" / "DinkLab"
         elif sys.platform == "win32":
-            base = Path(os.environ.get("APPDATA", home)) / "PickleballHQ"
+            base = Path(os.environ.get("APPDATA", home)) / "DinkLab"
         else:
-            base = home / ".pickleballhq"
+            base = home / ".dinklab"
         base.mkdir(parents=True, exist_ok=True)
         return base
     return Path(__file__).resolve().parent.parent
@@ -449,7 +449,7 @@ def ai_status():
 
 if __name__ == "__main__":
     print("=" * 60)
-    print("  PICKLEBALL HQ")
+    print("  DINKLAB")
     print("=" * 60)
     print(f"  Data dir:    {DATA_DIR}")
     print(f"  Uploads dir: {UPLOAD_DIR}")

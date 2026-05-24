@@ -1,13 +1,13 @@
 # -*- mode: python ; coding: utf-8 -*-
 """
-PyInstaller spec for Pickleball HQ.
+PyInstaller spec for DinkLab.
 
 Build:
-    pyinstaller pickleball-hq.spec
+    pyinstaller dinklab.spec
 
 Output:
-    Windows: dist/Pickleball HQ/Pickleball HQ.exe
-    macOS:   dist/Pickleball HQ.app
+    Windows: dist/DinkLab/DinkLab.exe
+    macOS:   dist/DinkLab.app
 """
 
 import sys
@@ -49,7 +49,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name='Pickleball HQ',
+    name='DinkLab',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -70,16 +70,16 @@ coll = COLLECT(
     strip=False,
     upx=True,
     upx_exclude=[],
-    name='Pickleball HQ',
+    name='DinkLab',
 )
 
 # macOS-only: wrap into a proper .app bundle
 if sys.platform == 'darwin':
     app = BUNDLE(
         coll,
-        name='Pickleball HQ.app',
+        name='DinkLab.app',
         # icon='assets/icon.icns',  # uncomment when you add an icon
-        bundle_identifier='com.aryanmozar.pickleballhq',
+        bundle_identifier='com.aryanmozar.dinklab',
         info_plist={
             'CFBundleShortVersionString': '1.0.0',
             'CFBundleVersion': '1.0.0',

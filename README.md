@@ -1,4 +1,4 @@
-# Pickleball HQ ◆
+# DinkLab ◆
 
 A self-hosted desktop app for competitive pickleball players who also create content. Track your gear, break down your film with local AI, plan your content calendar, and find out what's actually working — all running on your own machine, no cloud, no subscriptions.
 
@@ -34,8 +34,8 @@ Manually log each post's performance (views, likes, comments, saves, shares). Th
 This works the same on Windows and macOS.
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/pickleball-hq.git
-cd pickleball-hq
+git clone https://github.com/AryanMozar/dinklab.git
+cd dinklab
 python -m venv venv
 
 # Windows
@@ -48,7 +48,7 @@ pip install -r requirements.txt
 python launcher.py
 ```
 
-The Pickleball HQ window opens. Done.
+The DinkLab window opens. Done.
 
 ---
 
@@ -61,8 +61,8 @@ python build.py
 ```
 
 **Output:**
-- **Windows** → `dist/Pickleball HQ/Pickleball HQ.exe` — the whole `Pickleball HQ` folder is portable, you can zip it, put a shortcut on your desktop, or move it anywhere.
-- **macOS** → `dist/Pickleball HQ.app` — drag into `/Applications` to install.
+- **Windows** → `dist/DinkLab/DinkLab.exe` — the whole `DinkLab` folder is portable, you can zip it, put a shortcut on your desktop, or move it anywhere.
+- **macOS** → `dist/DinkLab.app` — drag into `/Applications` to install.
 
 **Important:** PyInstaller can only build for the OS it's running on. To get both:
 - Build the `.exe` on a Windows machine
@@ -82,7 +82,7 @@ The Film Room AI breakdown needs a local LLM. Everything else works without it.
    - **Mistral 7B Instruct** (faster on lower-end hardware)
 3. Open the **Local Server** tab, load the model, and click **Start Server**. Defaults to `http://localhost:1234`.
 
-The AI status dot in the top right of Pickleball HQ goes green when it can reach LM Studio.
+The AI status dot in the top right of DinkLab goes green when it can reach LM Studio.
 
 To override the URL or model:
 
@@ -102,8 +102,8 @@ When running from source, data is stored in the project's `data/` and `uploads/`
 
 When running as a packaged app, your data lives in a user folder that survives reinstalls:
 
-- **Windows:** `%APPDATA%\PickleballHQ\`
-- **macOS:** `~/Library/Application Support/PickleballHQ/`
+- **Windows:** `%APPDATA%\DinkLab\`
+- **macOS:** `~/Library/Application Support/DinkLab/`
 
 Nothing leaves your machine. No cloud, no telemetry.
 
@@ -125,10 +125,10 @@ No accounts, no database server, no cloud APIs, no monthly fees.
 ## Project structure
 
 ```
-pickleball-hq/
+dinklab/
 ├── launcher.py             # Desktop app entry point
 ├── build.py                # One-command build script
-├── pickleball-hq.spec      # PyInstaller config
+├── dinklab.spec            # PyInstaller config
 ├── backend/
 │   └── app.py              # Flask app — all API routes and storage
 ├── frontend/
@@ -145,7 +145,7 @@ pickleball-hq/
 
 ## How the AI breakdown actually works
 
-Real talk, because the alternative (computer vision analyzing your gameplay) is genuinely hard and not free. Here's what Pickleball HQ does instead:
+Real talk, because the alternative (computer vision analyzing your gameplay) is genuinely hard and not free. Here's what DinkLab does instead:
 
 1. You watch your own film in the app
 2. You drop timestamped notes as you go — *"2:14 — late on backhand drive"*, *"5:33 — great third-shot drop"*
