@@ -1,25 +1,25 @@
 /* ============================================
    DinkLab — editorial sport aesthetic
-   Court orange + chalk on deep slate.
+   Vermillion on warm parchment.
    ============================================ */
 
 :root {
-  --bg: #0d1117;
-  --bg-elev: #161b22;
-  --bg-card: #1c2230;
-  --border: #2a3142;
-  --border-strong: #3a4358;
-  --text: #e6edf3;
-  --text-dim: #8b96a8;
-  --text-faint: #5a6478;
-  --accent: #ff6a1a;        /* court orange */
-  --accent-soft: #ff6a1a22;
-  --accent-line: #ff6a1a55;
-  --lime: #c8ff3e;          /* ball lime */
-  --lime-soft: #c8ff3e22;
-  --red: #ff4d6d;
-  --blue: #4ea8ff;
-  --shadow: 0 12px 40px -12px rgba(0, 0, 0, 0.6);
+  --bg: #F7F4EF;
+  --bg-elev: #EEE9E2;
+  --bg-card: #FFFFFF;
+  --border: #E0D9D0;
+  --border-strong: #C4BBB0;
+  --text: #0F1923;
+  --text-dim: #5A6272;
+  --text-faint: #9AA2B0;
+  --accent: #E8311A;        /* vermillion */
+  --accent-soft: #E8311A14;
+  --accent-line: #E8311A44;
+  --lime: #1A7A46;          /* win green */
+  --lime-soft: #1A7A4614;
+  --red: #DC2626;
+  --blue: #1754AE;
+  --shadow: 0 12px 40px -12px rgba(15, 25, 35, 0.12);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -39,7 +39,7 @@ html, body {
   position: fixed; inset: 0;
   pointer-events: none;
   z-index: 1;
-  opacity: 0.04;
+  opacity: 0.025;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' /%3E%3C/svg%3E");
 }
 
@@ -47,7 +47,7 @@ html, body {
 .topbar {
   position: sticky; top: 0;
   z-index: 10;
-  background: rgba(13, 17, 23, 0.85);
+  background: rgba(247, 244, 239, 0.92);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
   padding: 1.1rem 2rem;
@@ -274,12 +274,12 @@ textarea { resize: vertical; font-family: 'Manrope', sans-serif; }
 
 .btn.primary {
   background: var(--accent);
-  color: #1a0a02;
+  color: #FFFFFF;
   font-weight: 600;
 }
 
 .btn.primary:hover {
-  background: #ff7d33;
+  background: #C8290F;
   transform: translateY(-1px);
   box-shadow: 0 6px 20px -6px var(--accent);
 }
@@ -349,7 +349,7 @@ textarea { resize: vertical; font-family: 'Manrope', sans-serif; }
 .gear-cat {
   position: absolute;
   top: 0.75rem; left: 0.75rem;
-  background: rgba(13, 17, 23, 0.85);
+  background: rgba(247, 244, 239, 0.92);
   backdrop-filter: blur(8px);
   color: var(--accent);
   font-family: 'JetBrains Mono', monospace;
@@ -509,7 +509,7 @@ textarea { resize: vertical; font-family: 'Manrope', sans-serif; }
 .countdown-card {
   text-align: center;
   padding: 2rem;
-  background: linear-gradient(135deg, var(--bg-card) 0%, #2a1a0a 100%);
+  background: linear-gradient(135deg, var(--bg-card) 0%, #fce8e4 100%);
   border-color: var(--accent-line);
 }
 
