@@ -59,7 +59,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    # icon='assets/icon.ico',  # uncomment when you add an icon
+    icon='assets/icon.ico',
 )
 
 coll = COLLECT(
@@ -78,7 +78,7 @@ if sys.platform == 'darwin':
     app = BUNDLE(
         coll,
         name='DinkLab.app',
-        # icon='assets/icon.icns',  # uncomment when you add an icon
+        icon='assets/icon.icns',
         bundle_identifier='com.aryanmozar.dinklab',
         info_plist={
             'CFBundleShortVersionString': '1.0.0',
