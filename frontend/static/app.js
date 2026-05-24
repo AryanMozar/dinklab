@@ -603,6 +603,132 @@ $("#analytics-form").addEventListener("submit", async (e) => {
   }
 });
 
+/* ============================================
+   INTEGRATIONS
+   ============================================ */
+async function loadIntegrations() {
+  const s   = await api.get("/api/integrations");
+  const bar = $("#integrations-bar");
+  bar.innerHTML = `
+    <div class="card integrations-card">
+      <h2 class="section-title">Connected Platforms</h2>
+      ${renderPlatformRow("youtube",   "YouTube",   s.youtube)}
+      ${renderPlatformRow("instagram", "Instagram", s.instagram)}
+      <div class="platform-row">
+        <span class="platform-dot"></span>
+        <span class="platform-name">TikTok</span>
+        <span class="platform-note">Manual entry only — TikTok's API isn't open to individual developers yet.</span>
+      </div>
+    </div>`;
+  wireIntegrations();
+}
+
+function renderPlatformRow(id, label, status) {
+  if (status.connected) {
+    return `
+      <div class="platform-row" data-platform="${id}">
+        <span class="platform-dot online"></span>
+        <span class="platform-name">${label}</span>
+        <span class="platform-sync-msg" id="sync-msg-${id}"></span>
+        <button class="btn ghost small" data-sync="${id}">Sync now</button>
+        <button class="btn danger small" data-disconnect="${id}">Disconnect</button>
+      </div>`;
+  }
+  if (status.configured) {
+    return `
+      <div class="platform-row" data-platform="${id}">
+        <span class="platform-dot"></span>
+        <span class="platform-name">${label}</span>
+        <span class="platform-note">Credentials saved.</span>
+        <button class="btn ghost small" data-connect="${id}">Connect →</button>
+      </div>`;
+  }
+  return `
+    <div class="platform-row" data-platform="${id}">
+      <span class="platform-dot"></span>
+      <span class="platform-name">${label}</span>
+      <button class="btn ghost small" data-setup="${id}">Set up →</button>
+    </div>
+    <div class="platform-setup" id="setup-${id}" style="display:none">
+      <div class="setup-form">
+        <label class="setup-label">${id === "youtube" ? "Client ID" : "App ID"}
+          <input class="setup-input" id="${id}-client-id" placeholder="${id === "youtube" ? "…apps.googleusercontent.com" : "Instagram App ID"}" />
+        </label>
+        <label class="setup-label">Client Secret
+          <input class="setup-input" id="${id}-client-secret" type="password" placeholder="••••••••" />
+        </label>
+        <button class="btn primary small" data-save="${id}">Save &amp; Connect</button>
+      </div>
+    </div>`;
+}
+
+function wireIntegrations() {
+  // Toggle setup form
+  $$("[data-setup]").forEach(b => b.addEventListener("click", () => {
+    const el = $(`#setup-${b.dataset.setup}`);
+    el.style.display = el.style.display === "none" ? "block" : "none";
+  }));
+
+  // Save credentials then connect
+  $$("[data-save]").forEach(b => b.addEventListener("click", async () => {
+    const p      = b.dataset.save;
+    const cid    = $(`#${p}-client-id`).value.trim();
+    const secret = $(`#${p}-client-secret`).value.trim();
+    if (!cid || !secret) return toast("Both fields are required", true);
+    await api.post("/api/integrations/credentials", { platform: p, client_id: cid, client_secret: secret });
+    startConnect(p);
+  }));
+
+  // Connect (credentials already saved)
+  $$("[data-connect]").forEach(b => b.addEventListener("click", () => startConnect(b.dataset.connect)));
+
+  // Sync
+  $$("[data-sync]").forEach(b => b.addEventListener("click", async () => {
+    const p   = b.dataset.sync;
+    const msg = $(`#sync-msg-${p}`);
+    b.disabled = true;
+    b.textContent = "Syncing…";
+    msg.textContent = "";
+    try {
+      const resp = await api.post(`/api/integrations/${p}/sync`);
+      const d    = await resp.json();
+      if (d.error) { toast(d.error, true); }
+      else {
+        msg.textContent = `+${d.imported} new · ${d.updated} updated`;
+        toast(`${p} synced`);
+        loadAnalytics();
+      }
+    } catch { toast("Sync failed", true); }
+    finally { b.disabled = false; b.textContent = "Sync now"; }
+  }));
+
+  // Disconnect
+  $$("[data-disconnect]").forEach(b => b.addEventListener("click", async () => {
+    if (!confirm(`Disconnect ${b.dataset.disconnect}? Your synced data stays.`)) return;
+    await api.del(`/api/integrations/${b.dataset.disconnect}/disconnect`);
+    loadIntegrations();
+  }));
+}
+
+async function startConnect(platform) {
+  const d = await api.get(`/api/integrations/${platform}/connect`);
+  if (d.error) return toast(d.error, true);
+  toast("Check your browser — authorize access then come back here.");
+  // Poll until connected (max 2 min)
+  let attempts = 0;
+  const poll = setInterval(async () => {
+    attempts++;
+    if (attempts > 60) { clearInterval(poll); return; }
+    const s = await api.get("/api/integrations");
+    if (s[platform]?.connected) {
+      clearInterval(poll);
+      toast(`${platform} connected!`);
+      loadIntegrations();
+      loadAnalytics();
+    }
+  }, 2000);
+}
+
 /* ---------- Boot ---------- */
 checkAIStatus();
 setInterval(checkAIStatus, 30000);
@@ -610,3 +736,4 @@ loadGear();
 loadFilms();
 loadCalendar();
 loadAnalytics();
+loadIntegrations();

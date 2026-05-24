@@ -480,6 +480,354 @@ def ai_status():
     return jsonify({"connected": False})
 
 
+# ---------- INTEGRATIONS ----------
+
+INTEGRATIONS_FILE = USER_DIR / "integrations.json"
+OAUTH_BASE = "http://localhost:5000"   # must match redirect URIs registered in developer consoles
+_oauth_pending: dict = {}              # state → Flow (YouTube)
+
+
+def load_cfg() -> dict:
+    if not INTEGRATIONS_FILE.exists():
+        return {}
+    try:
+        return json.loads(INTEGRATIONS_FILE.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+
+def save_cfg(data: dict) -> None:
+    INTEGRATIONS_FILE.write_text(json.dumps(data, indent=2), encoding="utf-8")
+
+
+def _oauth_success_html(name: str) -> str:
+    return f"""<!doctype html><html><body style="font-family:system-ui,sans-serif;
+        text-align:center;padding:4rem;background:#F7F4EF;color:#0F1923">
+      <div style="font-size:3rem;margin-bottom:1rem">&#10003;</div>
+      <h2>{name} connected</h2>
+      <p style="color:#5A6272">You can close this tab and go back to DinkLab.</p>
+      <script>setTimeout(()=>window.close(),2000)</script>
+    </body></html>"""
+
+
+@app.route("/api/integrations")
+def get_integrations():
+    cfg = load_cfg()
+    return jsonify({
+        "youtube": {
+            "configured": bool(cfg.get("youtube", {}).get("client_id")),
+            "connected":  bool(cfg.get("youtube", {}).get("token")),
+        },
+        "instagram": {
+            "configured": bool(cfg.get("instagram", {}).get("client_id")),
+            "connected":  bool(cfg.get("instagram", {}).get("access_token")),
+        },
+    })
+
+
+@app.route("/api/integrations/credentials", methods=["POST"])
+def set_credentials():
+    data = request.json
+    platform = data.get("platform")
+    if platform not in ("youtube", "instagram"):
+        return jsonify({"error": "Unknown platform"}), 400
+    cfg = load_cfg()
+    cfg.setdefault(platform, {})["client_id"]     = data.get("client_id", "").strip()
+    cfg.setdefault(platform, {})["client_secret"]  = data.get("client_secret", "").strip()
+    save_cfg(cfg)
+    return jsonify({"ok": True})
+
+
+# ---- YouTube ----
+
+@app.route("/api/integrations/youtube/connect")
+def youtube_connect():
+    cfg = load_cfg()
+    yt  = cfg.get("youtube", {})
+    if not yt.get("client_id") or not yt.get("client_secret"):
+        return jsonify({"error": "Add your YouTube Client ID and Secret first."}), 400
+    try:
+        import webbrowser
+        from google_auth_oauthlib.flow import Flow
+        redirect_uri = f"{OAUTH_BASE}/api/integrations/youtube/callback"
+        flow = Flow.from_client_config(
+            {"web": {
+                "client_id":     yt["client_id"],
+                "client_secret": yt["client_secret"],
+                "redirect_uris": [redirect_uri],
+                "auth_uri":      "https://accounts.google.com/o/oauth2/auth",
+                "token_uri":     "https://oauth2.googleapis.com/token",
+            }},
+            scopes=["https://www.googleapis.com/auth/youtube.readonly"],
+            redirect_uri=redirect_uri,
+        )
+        auth_url, state = flow.authorization_url(access_type="offline", prompt="consent")
+        _oauth_pending[state] = flow
+        webbrowser.open(auth_url)
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/integrations/youtube/callback")
+def youtube_callback():
+    state = request.args.get("state", "")
+    flow  = _oauth_pending.pop(state, None)
+    if not flow:
+        return "<h1>OAuth state mismatch — please try connecting again.</h1>", 400
+    try:
+        flow.fetch_token(authorization_response=request.url)
+        creds = flow.credentials
+        cfg   = load_cfg()
+        cfg.setdefault("youtube", {})["token"] = {
+            "token":         creds.token,
+            "refresh_token": creds.refresh_token,
+            "token_uri":     creds.token_uri,
+            "client_id":     creds.client_id,
+            "client_secret": creds.client_secret,
+            "scopes":        list(creds.scopes or []),
+        }
+        save_cfg(cfg)
+        return _oauth_success_html("YouTube")
+    except Exception as e:
+        return f"<h1>Error: {e}</h1>", 500
+
+
+@app.route("/api/integrations/youtube/sync", methods=["POST"])
+def youtube_sync():
+    cfg        = load_cfg()
+    token_data = cfg.get("youtube", {}).get("token")
+    if not token_data:
+        return jsonify({"error": "YouTube not connected"}), 400
+    try:
+        from google.oauth2.credentials import Credentials
+        from google.auth.transport.requests import Request as GRequest
+        from googleapiclient.discovery import build
+
+        creds = Credentials(
+            token=token_data["token"],
+            refresh_token=token_data.get("refresh_token"),
+            token_uri=token_data["token_uri"],
+            client_id=token_data["client_id"],
+            client_secret=token_data["client_secret"],
+            scopes=token_data.get("scopes"),
+        )
+        if creds.expired and creds.refresh_token:
+            creds.refresh(GRequest())
+            cfg["youtube"]["token"]["token"] = creds.token
+            save_cfg(cfg)
+
+        yt       = build("youtube", "v3", credentials=creds)
+        search   = yt.search().list(part="id", forMine=True, type="video",
+                                    maxResults=50, order="date").execute()
+        vid_ids  = [i["id"]["videoId"] for i in search.get("items", [])]
+        if not vid_ids:
+            return jsonify({"imported": 0, "updated": 0})
+
+        stats_r  = yt.videos().list(
+            part="statistics,snippet,contentDetails", id=",".join(vid_ids)
+        ).execute()
+
+        entries   = load("analytics", [])
+        by_source = {e["source_id"]: e for e in entries if e.get("source_id")}
+        imp = upd = 0
+
+        for v in stats_r.get("items", []):
+            vid_id   = v["id"]
+            src      = f"youtube:{vid_id}"
+            snip     = v["snippet"]
+            stats    = v.get("statistics", {})
+            dur_secs = _parse_yt_duration(v.get("contentDetails", {}).get("duration", ""))
+
+            row = {
+                "platform":  "youtube",
+                "format":    "short" if dur_secs <= 60 else "long",
+                "post_type": "highlight",
+                "topic":     snip.get("title", "")[:120],
+                "date":      snip.get("publishedAt", "")[:10],
+                "views":     int(stats.get("viewCount",    0)),
+                "likes":     int(stats.get("likeCount",    0)),
+                "comments":  int(stats.get("commentCount", 0)),
+                "saves":     0,
+                "shares":    0,
+                "url":       f"https://youtu.be/{vid_id}",
+                "source_id": src,
+            }
+            if src in by_source:
+                by_source[src].update({k: val for k, val in row.items() if k != "id"})
+                upd += 1
+            else:
+                row["id"]         = uuid.uuid4().hex
+                row["created_at"] = datetime.utcnow().isoformat()
+                entries.append(row)
+                imp += 1
+
+        save("analytics", entries)
+        return jsonify({"imported": imp, "updated": upd})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+def _parse_yt_duration(dur: str) -> int:
+    import re
+    m = re.match(r"PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?", dur or "")
+    if not m:
+        return 0
+    return int(m[1] or 0) * 3600 + int(m[2] or 0) * 60 + int(m[3] or 0)
+
+
+# ---- Instagram ----
+
+@app.route("/api/integrations/instagram/connect")
+def instagram_connect():
+    cfg = load_cfg()
+    ig  = cfg.get("instagram", {})
+    if not ig.get("client_id") or not ig.get("client_secret"):
+        return jsonify({"error": "Add your Instagram App ID and Secret first."}), 400
+    import webbrowser, urllib.parse
+    redirect_uri = f"{OAUTH_BASE}/api/integrations/instagram/callback"
+    params = urllib.parse.urlencode({
+        "client_id":     ig["client_id"],
+        "redirect_uri":  redirect_uri,
+        "scope":         "user_profile,user_media",
+        "response_type": "code",
+    })
+    webbrowser.open(f"https://api.instagram.com/oauth/authorize?{params}")
+    return jsonify({"ok": True})
+
+
+@app.route("/api/integrations/instagram/callback")
+def instagram_callback():
+    code  = request.args.get("code")
+    error = request.args.get("error_description") or request.args.get("error")
+    if error:
+        return f"<h1>Instagram error: {error}</h1>", 400
+    cfg          = load_cfg()
+    ig           = cfg.get("instagram", {})
+    redirect_uri = f"{OAUTH_BASE}/api/integrations/instagram/callback"
+    try:
+        r1 = requests.post("https://api.instagram.com/oauth/access_token", data={
+            "client_id":     ig["client_id"],
+            "client_secret": ig["client_secret"],
+            "grant_type":    "authorization_code",
+            "redirect_uri":  redirect_uri,
+            "code":          code,
+        })
+        r1.raise_for_status()
+        payload = r1.json()
+
+        r2 = requests.get("https://graph.instagram.com/access_token", params={
+            "grant_type":    "ig_exchange_token",
+            "client_secret": ig["client_secret"],
+            "access_token":  payload["access_token"],
+        })
+        r2.raise_for_status()
+
+        cfg.setdefault("instagram", {}).update({
+            "access_token": r2.json()["access_token"],
+            "user_id":      str(payload["user_id"]),
+        })
+        save_cfg(cfg)
+        return _oauth_success_html("Instagram")
+    except Exception as e:
+        return f"<h1>Error: {e}</h1>", 500
+
+
+@app.route("/api/integrations/instagram/sync", methods=["POST"])
+def instagram_sync():
+    cfg   = load_cfg()
+    ig    = cfg.get("instagram", {})
+    token = ig.get("access_token")
+    uid   = ig.get("user_id")
+    if not token or not uid:
+        return jsonify({"error": "Instagram not connected"}), 400
+    try:
+        BASE = "https://graph.instagram.com/v18.0"
+
+        # Refresh long-lived token (extends 60-day window)
+        try:
+            rr = requests.get(f"{BASE}/refresh_access_token", params={
+                "grant_type": "ig_refresh_token", "access_token": token,
+            })
+            if rr.ok:
+                token = rr.json().get("access_token", token)
+                cfg["instagram"]["access_token"] = token
+                save_cfg(cfg)
+        except Exception:
+            pass
+
+        r = requests.get(f"{BASE}/{uid}/media", params={
+            "fields":       "id,caption,media_type,timestamp,like_count,comments_count,permalink",
+            "access_token": token,
+            "limit":        50,
+        })
+        r.raise_for_status()
+
+        entries   = load("analytics", [])
+        by_source = {e["source_id"]: e for e in entries if e.get("source_id")}
+        fmt_map   = {"IMAGE": "story", "VIDEO": "short",
+                     "CAROUSEL_ALBUM": "carousel", "REELS": "short"}
+        imp = upd = 0
+
+        for item in r.json().get("data", []):
+            src  = f"instagram:{item['id']}"
+            reach = saves = shares = 0
+
+            try:
+                ri = requests.get(f"{BASE}/{item['id']}/insights", params={
+                    "metric": "reach,saved,shares", "access_token": token,
+                })
+                if ri.ok:
+                    for m in ri.json().get("data", []):
+                        val = m.get("value") or (m.get("values") or [{}])[0].get("value", 0)
+                        if   m["name"] == "reach":  reach  = val
+                        elif m["name"] == "saved":  saves  = val
+                        elif m["name"] == "shares": shares = val
+            except Exception:
+                pass
+
+            caption = (item.get("caption") or "")[:120]
+            row = {
+                "platform":  "instagram",
+                "format":    fmt_map.get(item.get("media_type", ""), "short"),
+                "post_type": "highlight",
+                "topic":     caption.split("\n")[0] if caption else item["id"],
+                "date":      item.get("timestamp", "")[:10],
+                "views":     reach,
+                "likes":     item.get("like_count", 0),
+                "comments":  item.get("comments_count", 0),
+                "saves":     saves,
+                "shares":    shares,
+                "url":       item.get("permalink", ""),
+                "source_id": src,
+            }
+            if src in by_source:
+                by_source[src].update({k: val for k, val in row.items() if k != "id"})
+                upd += 1
+            else:
+                row["id"]         = uuid.uuid4().hex
+                row["created_at"] = datetime.utcnow().isoformat()
+                entries.append(row)
+                imp += 1
+
+        save("analytics", entries)
+        return jsonify({"imported": imp, "updated": upd})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/integrations/<platform>/disconnect", methods=["DELETE"])
+def disconnect_platform(platform):
+    if platform not in ("youtube", "instagram"):
+        return jsonify({"error": "Unknown platform"}), 400
+    cfg = load_cfg()
+    p   = cfg.get(platform, {})
+    for key in ("token", "access_token", "user_id"):
+        p.pop(key, None)
+    save_cfg(cfg)
+    return jsonify({"ok": True})
+
+
 if __name__ == "__main__":
     print("=" * 60)
     print("  DINKLAB")
