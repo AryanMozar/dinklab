@@ -185,9 +185,9 @@ function updateImgSearchTrigger() {
   const name  = $('[name="name"]',  form).value.trim();
   const area  = $("#img-search-area");
   if (brand && name) {
-    // Always rebuild — clears stale results from a previous search
+    // Always rebuild — clears stale results from a previous search.
+    // Click is handled by the delegated listener below; no per-button addEventListener needed.
     area.innerHTML = `<button type="button" class="btn ghost small img-find-btn">◆ Find image →</button>`;
-    area.querySelector(".img-find-btn").addEventListener("click", searchGearImage);
   } else {
     area.innerHTML = "";
   }
@@ -266,6 +266,12 @@ $('[name="brand"]',    $("#gear-form")).addEventListener("input",  updateImgSear
 $('[name="name"]',     $("#gear-form")).addEventListener("input",  updateImgSearchTrigger);
 $('[name="category"]', $("#gear-form")).addEventListener("change", updateImgSearchTrigger);
 $("#gear-photo-file").addEventListener("change", clearGearImage);
+
+// Delegated click handler for the "Find image" button — lives on the stable container so
+// it survives every innerHTML replacement and fires reliably on every click.
+$("#img-search-area").addEventListener("click", (e) => {
+  if (e.target.closest(".img-find-btn")) searchGearImage();
+});
 
 /* ============================================
    FILM ROOM
