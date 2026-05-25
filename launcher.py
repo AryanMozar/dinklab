@@ -67,7 +67,9 @@ def main():
         min_size=(900, 600),
         resizable=True,
     )
-    webview.start()
+    # Pass --debug to open DevTools in the webview window (right-click → Inspect also works)
+    debug_mode = "--debug" in sys.argv
+    webview.start(debug=debug_mode)
 
 
 if __name__ == "__main__":

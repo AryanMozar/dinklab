@@ -180,26 +180,47 @@ $("#gear-form").addEventListener("submit", async (e) => {
 
 /* ---------- Gear image search ---------- */
 function updateImgSearchTrigger() {
-  const brand = $('[name="brand"]', $("#gear-form")).value.trim();
-  const name  = $('[name="name"]',  $("#gear-form")).value.trim();
+  const form  = $("#gear-form");
+  const brand = $('[name="brand"]', form).value.trim();
+  const name  = $('[name="name"]',  form).value.trim();
   const area  = $("#img-search-area");
   if (brand && name) {
-    if (!area.querySelector(".img-find-btn")) {
-      area.innerHTML = `<button type="button" class="btn ghost small img-find-btn">◆ Find image →</button>`;
-      area.querySelector(".img-find-btn").addEventListener("click", () => searchGearImage(brand, name));
-    }
+    // Always rebuild — clears stale results from a previous search
+    area.innerHTML = `<button type="button" class="btn ghost small img-find-btn">◆ Find image →</button>`;
+    area.querySelector(".img-find-btn").addEventListener("click", searchGearImage);
   } else {
     area.innerHTML = "";
   }
 }
 
-async function searchGearImage(brand, name) {
+async function searchGearImage() {
+  const form     = $("#gear-form");
+  const brand    = $('[name="brand"]',    form).value.trim();
+  const name     = $('[name="name"]',     form).value.trim();
+  const category = $('[name="category"]', form).value.trim();
+
+  // Build query: brand + name + category, dropping "accessory" (not useful as a search term)
+  const q = [brand, name, category !== "accessory" ? category : ""]
+    .filter(Boolean)
+    .join(" ")
+    .replace(/\s+/g, " ")
+    .trim();
+
   const area = $("#img-search-area");
   area.innerHTML = `<span class="img-searching">Searching…</span>`;
+
+  console.log("[image-search] query:", q);
+
   try {
-    const r = await api.get(`/api/gear/image-search?q=${encodeURIComponent(brand + " " + name)}`);
+    const r = await api.get(`/api/gear/image-search?q=${encodeURIComponent(q)}`);
+    console.log("[image-search] response:", r);
+
+    if (r.error) {
+      area.innerHTML = `<p class="img-no-results">Image search failed — check your connection.</p>`;
+      return;
+    }
     if (!r.images || !r.images.length) {
-      area.innerHTML = `<p class="img-no-results">No images found — upload your own above.</p>`;
+      area.innerHTML = `<p class="img-no-results">No images found — upload your own below.</p>`;
       return;
     }
     area.innerHTML = `
@@ -217,8 +238,9 @@ async function searchGearImage(brand, name) {
       thumb.addEventListener("error", () => thumb.style.display = "none");
       thumb.addEventListener("click", () => pickGearImage(thumb));
     });
-  } catch {
-    area.innerHTML = `<p class="img-no-results">Search failed — upload your own above.</p>`;
+  } catch (err) {
+    console.error("[image-search] request failed:", err);
+    area.innerHTML = `<p class="img-no-results">Image search failed — check your connection.</p>`;
   }
 }
 
@@ -240,8 +262,9 @@ function clearGearImage() {
   if (row) row.style.display = "none";
 }
 
-$('[name="brand"]', $("#gear-form")).addEventListener("input", updateImgSearchTrigger);
-$('[name="name"]',  $("#gear-form")).addEventListener("input", updateImgSearchTrigger);
+$('[name="brand"]',    $("#gear-form")).addEventListener("input",  updateImgSearchTrigger);
+$('[name="name"]',     $("#gear-form")).addEventListener("input",  updateImgSearchTrigger);
+$('[name="category"]', $("#gear-form")).addEventListener("change", updateImgSearchTrigger);
 $("#gear-photo-file").addEventListener("change", clearGearImage);
 
 /* ============================================

@@ -152,6 +152,7 @@ def add_gear():
 @app.route("/api/gear/image-search")
 def gear_image_search():
     q = request.args.get("q", "").strip()
+    print(f"[image-search] query: {q!r}", flush=True)
     if not q:
         return jsonify({"images": []})
     try:
@@ -161,8 +162,10 @@ def gear_image_search():
             {"url": r["image"], "thumb": r.get("thumbnail") or r["image"]}
             for r in results if r.get("image")
         ]
+        print(f"[image-search] returned {len(images)} image(s)", flush=True)
         return jsonify({"images": images[:4]})
     except Exception as e:
+        print(f"[image-search] error: {e}", flush=True)
         return jsonify({"images": [], "error": str(e)})
 
 

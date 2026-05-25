@@ -928,6 +928,12 @@ textarea { resize: vertical; font-family: 'Manrope', sans-serif; }
   font-size: 0.75rem;
   color: var(--text-faint);
   letter-spacing: 0.06em;
+  animation: img-pulse 1s ease-in-out infinite;
+}
+
+@keyframes img-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
 }
 
 .img-picker { margin-top: 0.5rem; }
